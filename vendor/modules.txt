@@ -1,0 +1,17 @@
+# github.com/gopherjs/gopherjs v0.0.0-20190411002643-bd77b112433e
+github.com/gopherjs/gopherjs/js
+# github.com/konsorten/go-windows-terminal-sequences v1.0.2
+github.com/konsorten/go-windows-terminal-sequences
+# github.com/sirupsen/logrus v1.4.1
+## explicit
+github.com/sirupsen/logrus
+# github.com/therecipe/qt v0.0.0-20200904063919-c0c124a5770d
+## explicit
+github.com/therecipe/qt
+github.com/therecipe/qt/core
+github.com/therecipe/qt/gui
+github.com/therecipe/qt/internal
+github.com/therecipe/qt/interop/gow
+github.com/therecipe/qt/widgets
+# golang.org/x/sys v0.0.0-20190419153524-e8e3143a4f4a
+golang.org/x/sys/unix
