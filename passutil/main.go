@@ -117,7 +117,7 @@ func RsaDecrypt(ciphertext, keyBytes []byte) []byte {
 	//获取私钥
 	block, _ := pem.Decode(keyBytes)
 	if block == nil {
-		CheckError(nil,"私钥读取错误")
+		CheckError(nil, "私钥读取错误")
 	}
 	//解析PKCS1格式的私钥
 	priv, err := x509.ParsePKCS1PrivateKey(block.Bytes)
@@ -264,10 +264,10 @@ func Decrypt(str string) string {
 	if len(str) == 0 {
 		return ""
 	}
-	logger.Logger.Debug("解密: %s....\n",str[0:10])
+	logger.Logger.Debug("解密: %s....\n", str[0:10])
 	ciphertextList := strings.Split(str, "\n")
 	size := len(ciphertextList)
-	logger.Logger.Debug("密文个数: %d\n",size)
+	logger.Logger.Debug("密文个数: %d\n", size)
 
 	prv, err := ioutil.ReadFile("./私钥.pem")
 	CheckError(err, "读取私钥错误")

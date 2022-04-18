@@ -3,8 +3,18 @@ package uigen
 import (
 	"cipher/logger"
 	"cipher/passutil"
+	"github.com/therecipe/qt/widgets"
+	"strings"
 )
 
+func (form *UIWindowsForm) BindEvent() {
+
+	form.Encrypt.ConnectClicked(form.EncryptClick)
+	form.Gen.ConnectClicked(form.GenClick)
+	form.Decrypt.ConnectClicked(form.DecryptClick)
+	form.ClearPubKey.ConnectClicked(form.ClearPubKeyClick)
+	form.SelectPubKey.ConnectClicked(form.SelectPubKeyClick)
+}
 func (form *UIWindowsForm) GenClick(checked bool) {
 
 	form.Label2.SetText("正在生成...")
@@ -20,12 +30,42 @@ func (form *UIWindowsForm) EncryptClick(checked bool) {
 	text = passutil.Encrypt(text)
 	form.Content.SetText(text)
 	form.Label2.SetText("加密完成")
-	logger.Logger.Debug("加密完成，密文: %s\n",text)
+	logger.Logger.Debug("加密完成，密文: %s\n", text)
 }
 
 func (form *UIWindowsForm) DecryptClick(checked bool) {
 	text := form.Content.ToPlainText()
-	logger.Logger.Debug("密文是: %s\n",text)
+	logger.Logger.Debug("密文是: %s\n", text)
 	text = passutil.Decrypt(text)
 	form.Content.SetText(text)
+
+}
+
+func (form *UIWindowsForm) ClearPubKeyClick(checked bool) {
+	PubKeys = nil
+	form.PublicKeyList.SetText("")
+}
+
+func (form *UIWindowsForm) SelectPubKeyClick(checked bool) {
+	// 选择文件
+	keys := widgets.QFileDialog_GetOpenFileNames(nil, "", "./", "*.pem", "", widgets.QFileDialog__ShowDirsOnly)
+	for _, key := range keys {
+		if !isInclude(PubKeys, key) {
+			PubKeys = append(PubKeys, key)
+		}
+	}
+	logger.Logger.Debug("选择了公钥: %v\n", PubKeys)
+	// 将文件回显
+	form.PublicKeyList.SetText(strings.Join(PubKeys, "\n"))
+}
+
+func isInclude(ss []string, s string) bool {
+	size := len(ss)
+	for i := 0; i < size; i++ {
+		if ss[i] == s {
+			return true
+		}
+	}
+	return false
+
 }
