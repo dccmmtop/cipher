@@ -21,6 +21,7 @@
 go get -v -tags=no_env github.com/therecipe/qt/cmd/...
 ```
 下载好库后会在`GOPATH%/bin`目录下出现几个帮助执行绑定工作的可执行文件
+
 ![](./image/QtTools.png)
 
 配置 Qt 编译环境，就是执行上面目录中的 qtsetup,但是不能直接执行，需要执行 `./setup.bat`
