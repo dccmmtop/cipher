@@ -7,5 +7,5 @@ SET QT_VERSION_MAJOR=5.9.1
 REM 编译32位程序
 SET GOARCH=386
 
-REM 编译具体项目时运行
-qtdeploy build desktop ./main.go
+REM 语言绑定安装，只需执行一次
+qtsetup.exe
