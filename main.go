@@ -11,10 +11,13 @@ func main() {
 	widget := widgets.NewQApplication(len(os.Args), os.Args)
 
 	mainwindows := widgets.NewQWidget(nil, 0) //建立空白的 widget
-	loginUI := uigen.UIWindowsForm{}
-	loginUI.SetupUI(mainwindows) // 将UI初始化给创建的mainwindows
-	mainwindows.Show()           // 显示
-
+	form := uigen.UIWindowsForm{}
+	// 绘制界面
+	form.SetupUI(mainwindows)
+	// 事件绑定
+	form.BindEvent()
+	// 显示
+	mainwindows.Show()
 	widget.Exec()
 
 }

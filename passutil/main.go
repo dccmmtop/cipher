@@ -17,12 +17,20 @@ import (
 	"fmt"
 	"io/ioutil"
 	mrand "math/rand"
+	"os"
 	"strings"
 	"time"
 )
+var (
+	KEY_SEP = "|+d@c#m$m+|"
+	PASS_SEP = "-|=w-a-n=|-"
+	PRIVATE_KEY = "./私钥/private.pem"
+	PUBLIC_KEY = "./公钥/public.pem"
+)
+
 
 //RSA公钥私钥产生
-func GenRsaKey() {
+func GenRsaKey()  {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 1024)
 	if err != nil {
 		panic(err)
@@ -43,8 +51,10 @@ func GenRsaKey() {
 		Bytes: derPkix,
 	}
 	pubkey := pem.EncodeToMemory(block)
-	ioutil.WriteFile("公钥.pem", pubkey, 0777)
-	ioutil.WriteFile("私钥.pem", prvkey, 0777)
+	os.Mkdir(strings.Split(PUBLIC_KEY,"/")[1],os.ModePerm)
+	os.Mkdir(strings.Split(PRIVATE_KEY,"/")[1],os.ModePerm)
+	ioutil.WriteFile(PUBLIC_KEY, pubkey, 0777)
+	ioutil.WriteFile(PRIVATE_KEY, prvkey, 0777)
 }
 
 //签名
@@ -117,7 +127,7 @@ func RsaDecrypt(ciphertext, keyBytes []byte) []byte {
 	//获取私钥
 	block, _ := pem.Decode(keyBytes)
 	if block == nil {
-		CheckError(nil,"私钥读取错误")
+		CheckError(nil, "私钥读取错误")
 	}
 	//解析PKCS1格式的私钥
 	priv, err := x509.ParsePKCS1PrivateKey(block.Bytes)
@@ -241,48 +251,66 @@ func DecryptByAes(data string, key string) string {
 	return string(text)
 }
 
-func Encrypt(content string) string {
-	if len(content) == 0 {
+func Encrypt(content string, pubKeyPathList []string) string {
+	pubKeySize := len(pubKeyPathList)
+	if len(content) == 0 || pubKeySize == 0{
 		return ""
 	}
 
 	desKey := randKey()
-	// 加密key
-	pub, err := ioutil.ReadFile("./公钥.pem")
-	CheckError(err, "读取公钥信息错误")
-	desKeyRsa := RsaEncrypt([]byte(desKey), pub)
-	desKeyRsaHex := hex.EncodeToString(desKeyRsa)
+	// 不同用户的公钥分别加密该key
+	var  desKeyRsaHexList = make([]string, 0, pubKeySize)
+	for i :=0; i < pubKeySize; i ++ {
+		pubKey, err := ioutil.ReadFile(pubKeyPathList[i])
+		CheckError(err, "读取公钥信息错误")
+		// 加密key
+		desKeyRsa := RsaEncrypt([]byte(desKey), pubKey)
+		desKeyRsaHexList = append(desKeyRsaHexList, hex.EncodeToString(desKeyRsa))
+	}
 
-	miwenByte, err := EncryptByAes([]byte(content), desKey)
+	// 对原文加密
+	secretText, err := EncryptByAes([]byte(content), desKey)
 	CheckError(err, "des 加密错误")
-	miwenStr := desKeyRsaHex + "|++|" + string(miwenByte)
-	return miwenStr
-
+	// 拼接加密的desKey,和密文
+	result := strings.Join(desKeyRsaHexList,KEY_SEP) + PASS_SEP + secretText
+	logger.Logger.Debug("密文\n",result)
+	return result
 }
 
-func Decrypt(str string) string {
+func Decrypt(str string) (string, error) {
 	if len(str) == 0 {
-		return ""
+		logger.Logger.Error("密文为空")
+		return "",errors.New("密文为空！")
 	}
-	logger.Logger.Debug("解密: %s....\n",str[0:10])
-	ciphertextList := strings.Split(str, "\n")
+	ciphertextList := strings.Split(str, PASS_SEP)
 	size := len(ciphertextList)
-	logger.Logger.Debug("密文个数: %d\n",size)
-
-	prv, err := ioutil.ReadFile("./私钥.pem")
-	CheckError(err, "读取私钥错误")
-	for i := 0; i < size; i++ {
-		info := strings.Split(ciphertextList[i], "|++|")
-		desKey := DecryptByRsa(info[0], prv)
-		if len(desKey) == 0 {
-			continue
-		}
-		text := DecryptByAes(info[1], desKey)
-		logger.Logger.Info("解密成功！\n")
-		return text
-
+	if size < 2 {
+		logger.Logger.Error("密文格式错误")
+		return "",errors.New("解密失败")
 	}
-	return ""
+
+	prv, err := ioutil.ReadFile(PRIVATE_KEY)
+	if err != nil {
+		logger.Logger.Error("读取私钥错误: ", err)
+		return  "",errors.New("解密失败，无法读取私钥!")
+	}
+	// 解密使用自己公钥加密的key,循环尝试解密
+	// FIXME: 改进
+	keys := strings.Split(ciphertextList[0],KEY_SEP)
+	keySize := len(keys)
+	var selfKey string
+	for i := 0; i< keySize; i ++ {
+		selfKey = DecryptByRsa(keys[i], prv)
+		if selfKey != "" {
+			break
+		}
+	}
+	if selfKey == "" {
+		logger.Logger.Debug("本人无法解密")
+		return "",errors.New("无法解密")
+	}
+	text := DecryptByAes(ciphertextList[1], selfKey)
+	return text,nil
 }
 func randKey() string {
 	mrand.Seed(time.Now().UnixNano())
