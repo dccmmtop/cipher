@@ -24,19 +24,29 @@ func (form *UIWindowsForm) GenClick(checked bool) {
 }
 
 func (form *UIWindowsForm) EncryptClick(checked bool) {
+	if len(PubKeys) == 0 {
+		logger.Logger.Info("没有选择公钥")
+		return
+	}
 	logger.Logger.Debug("加密")
 	form.Label2.SetText("加密中...")
 	text := form.Content.ToPlainText()
-	text = passutil.Encrypt(text)
+	// 加密，多公钥
+	text = passutil.Encrypt(text,PubKeys)
 	form.Content.SetText(text)
+	// 密文回显
 	form.Label2.SetText("加密完成")
-	logger.Logger.Debug("加密完成，密文: %s\n", text)
+	logger.Logger.Debug("加密完成，密文: ", text)
 }
 
 func (form *UIWindowsForm) DecryptClick(checked bool) {
 	text := form.Content.ToPlainText()
 	logger.Logger.Debug("密文是: %s\n", text)
-	text = passutil.Decrypt(text)
+	text ,err := passutil.Decrypt(text)
+	if err != nil {
+		form.Label2.SetText(err.Error())
+		return
+	}
 	form.Content.SetText(text)
 
 }
